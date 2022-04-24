@@ -21,8 +21,8 @@
     </licenses>
 
     <properties>
-        <mockito.version>2.26.0</mockito.version>
-        <junit.version>5.5.2</junit.version>
+        <mockito.version>4.4.0</mockito.version>
+        <junit.version>5.8.2</junit.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
