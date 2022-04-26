@@ -41,4 +41,17 @@ public final class Timespan {
     public Duration duration() {
         return Duration.between(startInclusive, endExclusive);
     }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final Timespan timespan = (Timespan) o;
+        return startInclusive.equals(timespan.startInclusive) && endExclusive.equals(timespan.endExclusive);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startInclusive, endExclusive);
+    }
 }

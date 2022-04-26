@@ -72,4 +72,16 @@ class TimespanTest {
             assertEquals(DURATION, TIMESPAN.duration());
         }
     }
+
+    @Nested
+    class ValueBasedEquality {
+        @Test
+        void equals() {
+            assertEquals(Timespan.of(START, END), Timespan.of(START, END));
+            assertEquals(Timespan.of(START, END), Timespan.from(START, DURATION));
+
+            assertEquals(Timespan.of(START, START), Timespan.from(START));
+            assertEquals(Timespan.from(START, Duration.ZERO), Timespan.from(START));
+        }
+    }
 }
