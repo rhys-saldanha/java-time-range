@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.rhyssaldanha</groupId>
     <artifactId>java-time-timespan</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>jar</packaging>
 
     <name>Java Time Timespan</name>
@@ -22,7 +20,8 @@
 
     <scm>
         <developerConnection>scm:git:https://github.com/rhys-saldanha/java-time-timespan.git</developerConnection>
-    </scm>
+      <tag>java-time-timespan-1.0</tag>
+  </scm>
 
     <distributionManagement>
         <repository>
