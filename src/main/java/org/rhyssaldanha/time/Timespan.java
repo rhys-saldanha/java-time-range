@@ -5,6 +5,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -14,12 +20,17 @@ import static java.util.Objects.requireNonNull;
  * occur. For example, in a future release, synchronization may fail.
  * The {@code equals} method should be used for comparisons.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public final class Timespan {
 
+    @JsonProperty
     private final Instant start;
+    @JsonProperty
     private final Instant end;
 
-    public static Timespan of(final Instant start, final Instant end) {
+    @JsonCreator
+    public static Timespan of(@JsonProperty("start") final Instant start,
+                              @JsonProperty("end") final Instant end) {
         requireNonNull(start, "start must not be null");
         requireNonNull(end, "end must not be null");
         return create(start, end);
@@ -43,6 +54,7 @@ public final class Timespan {
         this.end = end;
     }
 
+    @JsonGetter
     public Duration duration() {
         return Duration.between(start, end);
     }

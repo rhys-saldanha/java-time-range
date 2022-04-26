@@ -17,7 +17,7 @@ import org.rhyssaldanha.time.Timespan;
 import java.time.Duration;
 import java.time.Instant;
 
-class Main {
+class Create {
     public static void main(String[] args) {
         final Instant start = Instant.now();
         final Duration duration = Duration.ofDays(10);
@@ -39,7 +39,7 @@ import org.rhyssaldanha.time.Timespan;
 import java.time.Duration;
 import java.time.Instant;
 
-class Main {
+class Split {
     public static void main(String[] args) {
         final Instant A = Instant.now();
         final Instant B = A.plus(Duration.ofDays(5));
@@ -64,9 +64,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-import static java.time.temporal.ChronoUnit.DAYS;
-
-class Main {
+class Contains {
     public static void main(String[] args) {
         final Instant A = Instant.now();
         final Instant B = A.plus(Duration.ofDays(5));
@@ -78,6 +76,32 @@ class Main {
         AC.contains(B); //true
         AB.contains(C); //false
     }
+}
+```
+
+### Jackson de/serialisation
+
+A timespan can be serialised and deserialised.
+
+```java
+import org.rhyssaldanha.time.Timespan;
+
+import java.time.Instant;
+
+class Json {
+    public static void main(String[] args) {
+        Timespan.of(Instant.parse("2020-02-08T09:00:00Z"), Instant.parse("2020-02-08T14:00:00Z"))
+    }
+}
+```
+
+... will serialise to ...
+
+```json5
+{
+  "start": "2020-02-08T09:00:00Z", //UTC ISO-8601 format
+  "end": "2020-02-08T14:00:00Z",
+  "duration": 18000.0 //seconds
 }
 ```
 

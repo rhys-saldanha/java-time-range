@@ -1,10 +1,17 @@
 package org.rhyssaldanha.time;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
@@ -137,6 +144,32 @@ class TimespanTest {
                 void cannotSplit() {
                     assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.from(AFTER));
                     assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.to(BEFORE));
+                }
+            }
+
+            @Nested
+            class Json {
+                private final ObjectMapper objectMapper = JsonMapper.builder()
+                        .findAndAddModules()
+                        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                        .build();
+
+                @Test
+                @DisplayName("can serialise")
+                void serialise() throws Exception {
+                    final String actualJson = objectMapper.writeValueAsString(TIMESPAN);
+                    final String expectedJson = Files.readString(Paths.get("src", "test", "resources", "timespan.json"));
+
+                    JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.STRICT);
+                }
+
+                @Test
+                @DisplayName("can deserialise")
+                void deserialise() throws Exception {
+                    final String json = Files.readString(Paths.get("src", "test", "resources", "timespan.json"));
+                    final Timespan actualTimespan = objectMapper.readValue(json, Timespan.class);
+
+                    assertEquals(TIMESPAN, actualTimespan);
                 }
             }
         }
