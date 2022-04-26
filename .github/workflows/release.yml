@@ -1,9 +1,12 @@
 name: Publish package to GitHub Packages
 on:
-  release:
-    types: [ created ]
+  push:
+    branches:
+      - main
 jobs:
   publish:
+    needs:
+      - build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -11,7 +14,12 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
+      - name: Configure Git user
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
       - name: Publish package
-        run: mvn --batch-mode release:prepare release:perform
+        run: |
+          mvn --batch-mode release:prepare release:perform
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
