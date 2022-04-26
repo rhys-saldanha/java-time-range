@@ -5,41 +5,59 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
+/**
+ * This is a value-based class; programmers should treat instances that are
+ * {@linkplain #equals(Object) equal} as interchangeable and should not
+ * use instances for synchronization, or unpredictable behavior may
+ * occur. For example, in a future release, synchronization may fail.
+ * The {@code equals} method should be used for comparisons.
+ */
 public final class Timespan {
 
-    private final Instant startInclusive;
-    private final Instant endExclusive;
+    private final Instant start;
+    private final Instant end;
 
-    public static Timespan of(final Instant startInclusive, final Instant endExclusive) {
-        Objects.requireNonNull(startInclusive, "startInclusive");
-        Objects.requireNonNull(endExclusive, "endExclusive");
-        return create(startInclusive, endExclusive);
+    public static Timespan of(final Instant start, final Instant end) {
+        requireNonNull(start, "start must not be null");
+        requireNonNull(end, "end must not be null");
+        return create(start, end);
     }
 
-    public static Timespan from(final Instant startInclusive) {
-        return from(startInclusive, Duration.ZERO);
+    public static Timespan from(final Instant start, final Duration duration) {
+        requireNonNull(start, "start must not be null");
+        requireNonNull(duration, "duration must not be null");
+        return create(start, start.plus(duration));
     }
 
-    public static Timespan from(final Instant startInclusive, final Duration duration) {
-        Objects.requireNonNull(startInclusive, "startInclusive");
-        Objects.requireNonNull(duration, "duration");
-        return create(startInclusive, startInclusive.plus(duration));
-    }
-
-    private static Timespan create(final Instant startInclusive, final Instant endExclusive) {
-        if (endExclusive.isBefore(startInclusive)) {
-            throw new DateTimeException("End of timespan must occur after start");
+    private static Timespan create(final Instant start, final Instant end) {
+        if (end.isBefore(start)) {
+            throw new DateTimeException("end must not be before start");
         }
-        return new Timespan(startInclusive, endExclusive);
+        return new Timespan(start, end);
     }
 
-    private Timespan(final Instant startInclusive, final Instant endExclusive) {
-        this.startInclusive = startInclusive;
-        this.endExclusive = endExclusive;
+    private Timespan(final Instant start, final Instant end) {
+        this.start = start;
+        this.end = end;
     }
 
     public Duration duration() {
-        return Duration.between(startInclusive, endExclusive);
+        return Duration.between(start, end);
+    }
+
+    public boolean contains(final Instant instant) {
+        requireNonNull(instant, "instant must not be null");
+        return instant.equals(start) || instant.isAfter(start) && instant.isBefore(end);
+    }
+
+    public Timespan to(final Instant end) {
+        return Timespan.of(start, end);
+    }
+
+    public Timespan from(final Instant start) {
+        return Timespan.of(start, end);
     }
 
     @Override
@@ -47,11 +65,11 @@ public final class Timespan {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final Timespan timespan = (Timespan) o;
-        return startInclusive.equals(timespan.startInclusive) && endExclusive.equals(timespan.endExclusive);
+        return start.equals(timespan.start) && end.equals(timespan.end);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(startInclusive, endExclusive);
+        return Objects.hash(start, end);
     }
 }

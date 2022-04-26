@@ -3,14 +3,17 @@ package org.rhyssaldanha.time;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TimespanTest {
 
@@ -38,11 +41,11 @@ class TimespanTest {
         @Test
         @DisplayName("null parameters are invalid")
         void notNullParameters() {
-            assertThrows(NullPointerException.class, () -> Timespan.of(START, null));
-            assertThrows(NullPointerException.class, () -> Timespan.of(null, END));
+            assertThrowsWithMessage(NullPointerException.class, "start must not be null", () -> Timespan.of(null, END));
+            assertThrowsWithMessage(NullPointerException.class, "end must not be null", () -> Timespan.of(START, null));
 
-            assertThrows(NullPointerException.class, () -> Timespan.from(null, DURATION));
-            assertThrows(NullPointerException.class, () -> Timespan.from(START, null));
+            assertThrowsWithMessage(NullPointerException.class, "start must not be null", () -> Timespan.from(null, DURATION));
+            assertThrowsWithMessage(NullPointerException.class, "duration must not be null", () -> Timespan.from(START, null));
         }
 
         @Test
@@ -50,7 +53,7 @@ class TimespanTest {
         void endMustComeAfterStart() {
             final Instant invalidEnd = START.minus(Duration.ofDays(10));
 
-            assertThrows(DateTimeException.class, () -> Timespan.of(START, invalidEnd));
+            assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> Timespan.of(START, invalidEnd));
         }
 
         @Test
@@ -58,11 +61,11 @@ class TimespanTest {
         void zeroLengthTimespanIsValid() {
             assertNotNull(Timespan.of(START, START));
             assertNotNull(Timespan.from(START, Duration.ZERO));
-            assertNotNull(Timespan.from(START));
         }
     }
 
     @Nested
+    @DisplayName("With timespan")
     class WithTimespan {
         private final Timespan TIMESPAN = Timespan.of(START, END);
 
@@ -71,17 +74,83 @@ class TimespanTest {
         void hasDuration() {
             assertEquals(DURATION, TIMESPAN.duration());
         }
+
+        @Nested
+        @DisplayName("With instants outside of timespan")
+        class WithInstantsOutsideTimespan {
+            private final Instant BEFORE = START.minus(Duration.ofHours(2));
+            private final Instant MIDDLE = START.plus(Duration.ofHours(2));
+            private final Instant AFTER = END.plus(Duration.ofHours(2));
+
+            @Nested
+            class Contains {
+                @Test
+                @DisplayName("null parameters are invalid")
+                void notNullParameters() {
+                    assertThrowsWithMessage(NullPointerException.class, "instant must not be null", () -> TIMESPAN.contains(null));
+                }
+
+                @Test
+                @DisplayName("timespan contains instant")
+                void containsInstant() {
+                    assertTrue(TIMESPAN.contains(MIDDLE));
+                }
+
+                @Test
+                @DisplayName("timespan does not contain instant")
+                void doesNotContainInstant() {
+                    assertFalse(TIMESPAN.contains(BEFORE));
+                    assertFalse(TIMESPAN.contains(AFTER));
+                }
+
+                @Test
+                @DisplayName("timespan is start inclusive")
+                void startInclusive() {
+                    assertTrue(TIMESPAN.contains(START));
+                }
+
+                @Test
+                @DisplayName("timespan is end exclusive")
+                void endExclusive() {
+                    assertFalse(TIMESPAN.contains(END));
+                }
+            }
+
+            @Nested
+            class Split {
+                @Test
+                @DisplayName("null parameters are invalid")
+                void notNullParameters() {
+                    assertThrowsWithMessage(NullPointerException.class, "end must not be null", () -> TIMESPAN.to(null));
+                    assertThrowsWithMessage(NullPointerException.class, "start must not be null", () -> TIMESPAN.from(null));
+                }
+
+                @Test
+                @DisplayName("timespan can be split with an instant")
+                void canSplit() {
+                    assertEquals(Timespan.of(START, MIDDLE), TIMESPAN.to(MIDDLE));
+                    assertEquals(Timespan.of(MIDDLE, END), TIMESPAN.from(MIDDLE));
+                }
+
+                @Test
+                @DisplayName("cannot split if instant is outside timespan")
+                void cannotSplit() {
+                    assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.from(AFTER));
+                    assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.to(BEFORE));
+                }
+            }
+        }
     }
 
-    @Nested
-    class ValueBasedEquality {
-        @Test
-        void equals() {
-            assertEquals(Timespan.of(START, END), Timespan.of(START, END));
-            assertEquals(Timespan.of(START, END), Timespan.from(START, DURATION));
+    @Test
+    @DisplayName("value-based equality")
+    void valueBasedEquality() {
+        assertEquals(Timespan.of(START, END), Timespan.of(START, END));
+        assertEquals(Timespan.of(START, END), Timespan.from(START, DURATION));
+    }
 
-            assertEquals(Timespan.of(START, START), Timespan.from(START));
-            assertEquals(Timespan.from(START, Duration.ZERO), Timespan.from(START));
-        }
+    private static <T extends Throwable> void assertThrowsWithMessage(final Class<T> expectedType, final String expectedMessage, final Executable delegate) {
+        final T exception = assertThrows(expectedType, delegate);
+        assertEquals(expectedMessage, exception.getMessage());
     }
 }
