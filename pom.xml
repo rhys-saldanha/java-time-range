@@ -20,6 +20,14 @@
         </license>
     </licenses>
 
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/rhys-saldanha/java-time-timespan</url>
+        </repository>
+    </distributionManagement>
+
     <properties>
         <jackson.version>2.13.2</jackson.version>
         <javadoc.plugin.version>3.1.1</javadoc.plugin.version>
