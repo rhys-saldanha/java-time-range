@@ -65,9 +65,9 @@ public final class Timespan {
     }
 
     private static Boolean instantsOrdered(final Instant start, final Optional<Instant> maybeEnd) {
-        final Predicate<Instant> isBefore = start::isBefore;
-        final Predicate<Instant> isEqualToStart = start::equals;
-        return maybeEnd.stream().allMatch(isBefore.or(isEqualToStart));
+        final Predicate<Instant> startIsBefore = start::isBefore;
+        final Predicate<Instant> startIsEqualTo = start::equals;
+        return maybeEnd.stream().allMatch(startIsBefore.or(startIsEqualTo));
     }
 
     private Timespan(final Instant start, final Optional<Instant> maybeEnd) {
