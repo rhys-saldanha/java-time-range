@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 import static java.util.Objects.requireNonNull;
@@ -28,8 +29,8 @@ public final class Timespan {
 
     @JsonProperty
     private final Instant start;
-    @JsonProperty
-    private final Optional<Instant> end;
+    @JsonProperty("end")
+    private final Optional<Instant> maybeEnd;
 
     public static Timespan of(final Instant start, final Instant end) {
         requireNonNull(start, "start must not be null");
@@ -50,26 +51,33 @@ public final class Timespan {
 
     @JsonCreator
     private static Timespan create(@JsonProperty("start") final Instant start,
-                                   @JsonProperty("end") final Optional<Instant> end) {
+                                   @JsonProperty("end") final Optional<Instant> maybeEnd) {
         requireNonNull(start, "start must not be null");
-        requireNonNull(end, "end must not be null");
+        requireInstantsOrdered(start, maybeEnd);
 
-        if (end.isPresent()) {
-            if (end.get().isBefore(start)) {
-                throw new DateTimeException("end must not be before start");
-            }
-        }
-        return new Timespan(start, end);
+        return new Timespan(start, maybeEnd);
     }
 
-    private Timespan(final Instant start, final Optional<Instant> end) {
+    private static void requireInstantsOrdered(final Instant start, final Optional<Instant> maybeEnd) {
+        if (!instantsOrdered(start, maybeEnd)) {
+            throw new DateTimeException("end must not be before start");
+        }
+    }
+
+    private static Boolean instantsOrdered(final Instant start, final Optional<Instant> maybeEnd) {
+        final Predicate<Instant> isBefore = start::isBefore;
+        final Predicate<Instant> isEqualToStart = start::equals;
+        return maybeEnd.stream().allMatch(isBefore.or(isEqualToStart));
+    }
+
+    private Timespan(final Instant start, final Optional<Instant> maybeEnd) {
         this.start = start;
-        this.end = end;
+        this.maybeEnd = maybeEnd;
     }
 
     @JsonGetter
     public Optional<Duration> duration() {
-        return end.map(instant -> Duration.between(start, instant));
+        return maybeEnd.map(end -> Duration.between(start, end));
     }
 
     public boolean contains(final Instant instant) {
@@ -82,17 +90,25 @@ public final class Timespan {
     }
 
     private boolean isBeforeEnd(final Instant instant) {
-        return end.isEmpty() || instant.isBefore(end.get());
+        return maybeEnd.isEmpty() || instant.isBefore(maybeEnd.get());
     }
 
     public Timespan to(final Instant end) {
         requireNonNull(end, "end must not be null");
+        requireContained(end, "end must be within existing timespan");
         return create(start, Optional.of(end));
     }
 
     public Timespan from(final Instant start) {
         requireNonNull(start, "start must not be null");
-        return create(start, end);
+        requireContained(start, "start must be within existing timespan");
+        return create(start, maybeEnd);
+    }
+
+    private void requireContained(final Instant instant, final String message) {
+        if (!this.contains(instant)) {
+            throw new DateTimeException(message);
+        }
     }
 
     @Override
@@ -100,19 +116,19 @@ public final class Timespan {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final Timespan timespan = (Timespan) o;
-        return start.equals(timespan.start) && end.equals(timespan.end);
+        return start.equals(timespan.start) && maybeEnd.equals(timespan.maybeEnd);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(start, end);
+        return Objects.hash(start, maybeEnd);
     }
 
     @Override
     public String toString() {
         return "Timespan{" +
                 "start=" + start +
-                ", end=" + end +
+                ", end=" + maybeEnd +
                 '}';
     }
 }

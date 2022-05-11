@@ -144,15 +144,18 @@ class TimespanTest {
                 @Test
                 @DisplayName("can be split with a time during timespan")
                 void canSplit() {
-                    assertEquals(Timespan.of(START, DURING), TIMESPAN.to(DURING));
                     assertEquals(Timespan.of(DURING, END), TIMESPAN.from(DURING));
+                    assertEquals(Timespan.of(START, DURING), TIMESPAN.to(DURING));
                 }
 
                 @Test
                 @DisplayName("cannot be split if time is outside timespan")
                 void cannotSplit() {
-                    assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.from(AFTER));
-                    assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.to(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "start must be within existing timespan", () -> TIMESPAN.from(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "start must be within existing timespan", () -> TIMESPAN.from(AFTER));
+
+                    assertThrowsWithMessage(DateTimeException.class, "end must be within existing timespan", () -> TIMESPAN.to(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "end must be within existing timespan", () -> TIMESPAN.to(AFTER));
                 }
             }
 
@@ -228,15 +231,15 @@ class TimespanTest {
                 @Test
                 @DisplayName("timespan can be split")
                 void canSplit() {
-                    assertEquals(Timespan.of(START, DURING), TIMESPAN.to(DURING));
-                    assertEquals(Timespan.starting(BEFORE), TIMESPAN.from(BEFORE));
                     assertEquals(Timespan.starting(DURING), TIMESPAN.from(DURING));
+                    assertEquals(Timespan.of(START, DURING), TIMESPAN.to(DURING));
                 }
 
                 @Test
                 @DisplayName("cannot split if instant is outside timespan")
                 void cannotSplit() {
-                    assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.to(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "start must be within existing timespan", () -> TIMESPAN.from(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "end must be within existing timespan", () -> TIMESPAN.to(BEFORE));
                 }
             }
 
