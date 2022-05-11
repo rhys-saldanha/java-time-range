@@ -4,7 +4,7 @@
 
     <groupId>org.rhyssaldanha</groupId>
     <artifactId>java-time-timespan</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
 
     <name>Java Time Timespan</name>
@@ -20,7 +20,7 @@
 
     <scm>
         <developerConnection>scm:git:https://github.com/rhys-saldanha/java-time-timespan.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>java-time-timespan-1.1</tag>
   </scm>
 
     <distributionManagement>
