@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,15 +32,21 @@ class TimespanTest {
     @Nested
     class Create {
         @Test
-        @DisplayName("using start and end instants")
+        @DisplayName("can create timespan using start and end instants")
         void startAndEndInstants() {
             assertNotNull(Timespan.of(START, END));
         }
 
         @Test
-        @DisplayName("using start instant and duration")
+        @DisplayName("can create timespan using start instant and duration")
         void startInstantAndDuration() {
             assertNotNull(Timespan.from(START, DURATION));
+        }
+
+        @Test
+        @DisplayName("can create timespan with no defined end")
+        void undefinedEnd() {
+            assertNotNull(Timespan.starting(START));
         }
     }
 
@@ -53,6 +60,8 @@ class TimespanTest {
 
             assertThrowsWithMessage(NullPointerException.class, "start must not be null", () -> Timespan.from(null, DURATION));
             assertThrowsWithMessage(NullPointerException.class, "duration must not be null", () -> Timespan.from(START, null));
+
+            assertThrowsWithMessage(NullPointerException.class, "start must not be null", () -> Timespan.starting(null));
         }
 
         @Test
@@ -79,14 +88,14 @@ class TimespanTest {
         @Test
         @DisplayName("a timespan has a duration")
         void hasDuration() {
-            assertEquals(DURATION, TIMESPAN.duration());
+            assertEquals(Optional.of(DURATION), TIMESPAN.duration());
         }
 
         @Nested
-        @DisplayName("With instants outside of timespan")
+        @DisplayName("With times before, during and after timespan")
         class WithInstantsOutsideTimespan {
             private final Instant BEFORE = START.minus(Duration.ofHours(2));
-            private final Instant MIDDLE = START.plus(Duration.ofHours(2));
+            private final Instant DURING = START.plus(Duration.ofHours(2));
             private final Instant AFTER = END.plus(Duration.ofHours(2));
 
             @Nested
@@ -98,13 +107,13 @@ class TimespanTest {
                 }
 
                 @Test
-                @DisplayName("timespan contains instant")
+                @DisplayName("contains time during timespan")
                 void containsInstant() {
-                    assertTrue(TIMESPAN.contains(MIDDLE));
+                    assertTrue(TIMESPAN.contains(DURING));
                 }
 
                 @Test
-                @DisplayName("timespan does not contain instant")
+                @DisplayName("does not contain times before or after timespan")
                 void doesNotContainInstant() {
                     assertFalse(TIMESPAN.contains(BEFORE));
                     assertFalse(TIMESPAN.contains(AFTER));
@@ -133,17 +142,20 @@ class TimespanTest {
                 }
 
                 @Test
-                @DisplayName("timespan can be split with an instant")
+                @DisplayName("can be split with a time during timespan")
                 void canSplit() {
-                    assertEquals(Timespan.of(START, MIDDLE), TIMESPAN.to(MIDDLE));
-                    assertEquals(Timespan.of(MIDDLE, END), TIMESPAN.from(MIDDLE));
+                    assertEquals(Timespan.of(DURING, END), TIMESPAN.from(DURING));
+                    assertEquals(Timespan.of(START, DURING), TIMESPAN.to(DURING));
                 }
 
                 @Test
-                @DisplayName("cannot split if instant is outside timespan")
+                @DisplayName("cannot be split if time is outside timespan")
                 void cannotSplit() {
-                    assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.from(AFTER));
-                    assertThrowsWithMessage(DateTimeException.class, "end must not be before start", () -> TIMESPAN.to(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "start must be within existing timespan", () -> TIMESPAN.from(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "start must be within existing timespan", () -> TIMESPAN.from(AFTER));
+
+                    assertThrowsWithMessage(DateTimeException.class, "end must be within existing timespan", () -> TIMESPAN.to(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "end must be within existing timespan", () -> TIMESPAN.to(AFTER));
                 }
             }
 
@@ -175,11 +187,96 @@ class TimespanTest {
         }
     }
 
+    @Nested
+    @DisplayName("With start-only timespan")
+    class WithStartTimespan {
+        private final Timespan TIMESPAN = Timespan.starting(START);
+
+        @Test
+        @DisplayName("timespan has no duration")
+        void hasDuration() {
+            assertEquals(Optional.empty(), TIMESPAN.duration());
+        }
+
+        @Nested
+        @DisplayName("With times before and after start")
+        class WithInstantsOutsideTimespan {
+            private final Instant BEFORE = START.minus(Duration.ofHours(2));
+            private final Instant DURING = START.plus(Duration.ofHours(2));
+
+            @Nested
+            class Contains {
+                @Test
+                @DisplayName("contains time after start")
+                void containsInstant() {
+                    assertTrue(TIMESPAN.contains(DURING));
+                }
+
+                @Test
+                @DisplayName("does not contain time before start")
+                void doesNotContainInstant() {
+                    assertFalse(TIMESPAN.contains(BEFORE));
+                }
+            }
+
+            @Nested
+            class Split {
+                @Test
+                @DisplayName("null parameters are invalid")
+                void notNullParameters() {
+                    assertThrowsWithMessage(NullPointerException.class, "end must not be null", () -> TIMESPAN.to(null));
+                    assertThrowsWithMessage(NullPointerException.class, "start must not be null", () -> TIMESPAN.from(null));
+                }
+
+                @Test
+                @DisplayName("timespan can be split")
+                void canSplit() {
+                    assertEquals(Timespan.starting(DURING), TIMESPAN.from(DURING));
+                    assertEquals(Timespan.of(START, DURING), TIMESPAN.to(DURING));
+                }
+
+                @Test
+                @DisplayName("cannot split if instant is outside timespan")
+                void cannotSplit() {
+                    assertThrowsWithMessage(DateTimeException.class, "start must be within existing timespan", () -> TIMESPAN.from(BEFORE));
+                    assertThrowsWithMessage(DateTimeException.class, "end must be within existing timespan", () -> TIMESPAN.to(BEFORE));
+                }
+            }
+
+            @Nested
+            class Json {
+                private final ObjectMapper objectMapper = JsonMapper.builder()
+                        .findAndAddModules()
+                        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                        .build();
+
+                @Test
+                @DisplayName("can serialise")
+                void serialise() throws Exception {
+                    final String actualJson = objectMapper.writeValueAsString(TIMESPAN);
+                    final String expectedJson = Files.readString(Paths.get("src", "test", "resources", "start-only-timespan.json"));
+
+                    JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.STRICT);
+                }
+
+                @Test
+                @DisplayName("can deserialise")
+                void deserialise() throws Exception {
+                    final String json = Files.readString(Paths.get("src", "test", "resources", "start-only-timespan.json"));
+                    final Timespan actualTimespan = objectMapper.readValue(json, Timespan.class);
+
+                    assertEquals(TIMESPAN, actualTimespan);
+                }
+            }
+        }
+    }
+
     @Test
     @DisplayName("value-based equality")
     void valueBasedEquality() {
         assertEquals(Timespan.of(START, END), Timespan.of(START, END));
         assertEquals(Timespan.of(START, END), Timespan.from(START, DURATION));
+        assertEquals(Timespan.starting(START), Timespan.starting(START));
     }
 
     private static <T extends Throwable> void assertThrowsWithMessage(final Class<T> expectedType, final String expectedMessage, final Executable delegate) {

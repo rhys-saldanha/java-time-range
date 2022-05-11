@@ -3,6 +3,7 @@
 This library serves to extend the Java 8 Date/Time API to represent the notion of a _timespan_.
 
 A timespan is a period of time between two fixed points on the time-line.
+This library also allows the representation of a start-only timespan.
 
 ## Usage
 
@@ -25,6 +26,7 @@ class Create {
 
         Timespan.of(start, end);
         Timespan.from(start, duration);
+        Timespan.starting(start);
     }
 }
 ```
@@ -83,6 +85,15 @@ class Contains {
 
 A timespan can be serialised and deserialised.
 
+In order to serialise `Instant`s, the following Jackson datatype package is required:
+
+```xml
+<dependency>
+    <groupId>com.fasterxml.jackson.datatype</groupId>
+    <artifactId>jackson-datatype-jsr310</artifactId>
+</dependency>
+```
+
 ```java
 import org.rhyssaldanha.time.Timespan;
 
@@ -90,7 +101,7 @@ import java.time.Instant;
 
 class Json {
     public static void main(String[] args) {
-        Timespan.of(Instant.parse("2020-02-08T09:00:00Z"), Instant.parse("2020-02-08T14:00:00Z"))
+        Timespan.of(Instant.parse("2020-02-08T09:00:00Z"), Instant.parse("2020-02-08T14:00:00Z"));
     }
 }
 ```
@@ -99,9 +110,40 @@ class Json {
 
 ```json5
 {
-  "start": "2020-02-08T09:00:00Z", //UTC ISO-8601 format
+  //UTC ISO-8601 format
+  "start": "2020-02-08T09:00:00Z",
   "end": "2020-02-08T14:00:00Z",
-  "duration": 18000.0 //seconds
+  //seconds
+  "duration": 18000.0
+}
+```
+
+In order to correctly serialise `Optional` properties, the following Jackson datatype package is required:
+
+```xml
+<dependency>
+    <groupId>com.fasterxml.jackson.datatype</groupId>
+    <artifactId>jackson-datatype-jdk8</artifactId>
+</dependency>
+```
+
+```java
+import org.rhyssaldanha.time.Timespan;
+
+import java.time.Instant;
+
+class Json {
+    public static void main(String[] args) {
+        Timespan.starting(Instant.parse("2020-02-08T09:00:00Z"));
+    }
+}
+```
+
+... will serialise to ...
+
+```json5
+{
+  "start": "2020-02-08T09:00:00Z"
 }
 ```
 
