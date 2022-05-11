@@ -1,16 +1,18 @@
 package org.rhyssaldanha.time;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -21,55 +23,76 @@ import static java.util.Objects.requireNonNull;
  * The {@code equals} method should be used for comparisons.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(NON_ABSENT)
 public final class Timespan {
 
     @JsonProperty
     private final Instant start;
     @JsonProperty
-    private final Instant end;
+    private final Optional<Instant> end;
 
-    @JsonCreator
-    public static Timespan of(@JsonProperty("start") final Instant start,
-                              @JsonProperty("end") final Instant end) {
+    public static Timespan of(final Instant start, final Instant end) {
         requireNonNull(start, "start must not be null");
         requireNonNull(end, "end must not be null");
-        return create(start, end);
+        return create(start, Optional.of(end));
     }
 
     public static Timespan from(final Instant start, final Duration duration) {
         requireNonNull(start, "start must not be null");
         requireNonNull(duration, "duration must not be null");
-        return create(start, start.plus(duration));
+        return create(start, Optional.of(start.plus(duration)));
     }
 
-    private static Timespan create(final Instant start, final Instant end) {
-        if (end.isBefore(start)) {
-            throw new DateTimeException("end must not be before start");
+    public static Timespan starting(final Instant start) {
+        requireNonNull(start, "start must not be null");
+        return create(start, Optional.empty());
+    }
+
+    @JsonCreator
+    private static Timespan create(@JsonProperty("start") final Instant start,
+                                   @JsonProperty("end") final Optional<Instant> end) {
+        requireNonNull(start, "start must not be null");
+        requireNonNull(end, "end must not be null");
+
+        if (end.isPresent()) {
+            if (end.get().isBefore(start)) {
+                throw new DateTimeException("end must not be before start");
+            }
         }
         return new Timespan(start, end);
     }
 
-    private Timespan(final Instant start, final Instant end) {
+    private Timespan(final Instant start, final Optional<Instant> end) {
         this.start = start;
         this.end = end;
     }
 
     @JsonGetter
-    public Duration duration() {
-        return Duration.between(start, end);
+    public Optional<Duration> duration() {
+        return end.map(instant -> Duration.between(start, instant));
     }
 
     public boolean contains(final Instant instant) {
         requireNonNull(instant, "instant must not be null");
-        return instant.equals(start) || instant.isAfter(start) && instant.isBefore(end);
+        return isAfterStart(instant) && isBeforeEnd(instant);
+    }
+
+    private boolean isAfterStart(final Instant instant) {
+        return instant.equals(start) || instant.isAfter(start);
+    }
+
+    private boolean isBeforeEnd(final Instant instant) {
+        return end.isEmpty() || instant.isBefore(end.get());
     }
 
     public Timespan to(final Instant end) {
-        return Timespan.of(start, end);
+        requireNonNull(end, "end must not be null");
+        return create(start, Optional.of(end));
     }
 
     public Timespan from(final Instant start) {
-        return Timespan.of(start, end);
+        requireNonNull(start, "start must not be null");
+        return create(start, end);
     }
 
     @Override
@@ -83,5 +106,13 @@ public final class Timespan {
     @Override
     public int hashCode() {
         return Objects.hash(start, end);
+    }
+
+    @Override
+    public String toString() {
+        return "Timespan{" +
+                "start=" + start +
+                ", end=" + end +
+                '}';
     }
 }
